@@ -8,6 +8,7 @@ from app.domain.enums.log_level import LogLevel
 
 class LogCreateRequest(BaseModel):
 
+    project_id: UUID = Field(..., description="Project this log belongs to")
     trace_id: UUID = Field(..., description="Trace ID for distributed tracing")
     service: str = Field(..., description="Service generating the log")
     level: LogLevel
