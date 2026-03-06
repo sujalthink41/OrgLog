@@ -1,0 +1,23 @@
+[project]
+name = "orglog"
+version = "0.1.0"
+description = "OrgLog logging platform"
+authors = [
+    {name = "Sujal"}
+]
+readme = "README.md"
+requires-python = "^3.11"
+dependencies = [
+    "fastapi (>=0.135.1,<0.136.0)",
+    "uvicorn (>=0.41.0,<0.42.0)",
+    "redis (>=7.2.1,<8.0.0)",
+    "pydantic-settings (>=2.0.0,<3.0.0)"
+]
+
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
