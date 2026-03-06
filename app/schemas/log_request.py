@@ -1,7 +1,8 @@
+from datetime import datetime
+from typing import Any, Dict, Optional
+from uuid import UUID
+
 from pydantic import BaseModel, Field
-from uuid import UUID 
-from typing import Optional, Dict, Any 
-from datetime import datetime 
 
 from app.domain.enums.log_level import LogLevel
 

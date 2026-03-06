@@ -1,9 +1,10 @@
-from uuid import UUID
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+from uuid import UUID
 
 from app.domain.enums.log_level import LogLevel
+
 
 @dataclass
 class LogEntry:
@@ -24,8 +25,8 @@ class LogEntry:
             level=request.level,
             message=request.message,
             metadata=request.metadata,
-            timestamp=request.timestamp or datetime.utcnow()
+            timestamp=request.timestamp or datetime.utcnow(),
         )
-    
+
     def to_dict(self):
         return asdict(self)

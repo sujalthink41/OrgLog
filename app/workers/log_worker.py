@@ -1,9 +1,10 @@
 import asyncio
 import json
 
+from app.core.constants import LOG_CONSUMER_GROUP, LOG_STREAM
 from app.core.redis import redis_client
-from app.core.constants import LOG_STREAM, LOG_CONSUMER_GROUP
-from app.utils.workername import generate_worker_name 
+from app.utils.workername import generate_worker_name
+
 
 class LogWorker:
 
@@ -20,7 +21,7 @@ class LogWorker:
                 consumername=self.consumer_name,
                 streams={LOG_STREAM: ">"},
                 count=10,
-                block=5000
+                block=5000,
             )
 
             if not messages:
@@ -34,10 +35,7 @@ class LogWorker:
     async def create_consumer_group(self):
         try:
             await redis_client.xgroup_create(
-                name=LOG_STREAM,
-                groupname=LOG_CONSUMER_GROUP,
-                id="0",
-                mkstream=True
+                name=LOG_STREAM, groupname=LOG_CONSUMER_GROUP, id="0", mkstream=True
             )
         except Exception:
             pass
@@ -48,11 +46,7 @@ class LogWorker:
 
         print("Processing log:", log_data)
 
-        await redis_client.xack(
-            LOG_STREAM,
-            LOG_CONSUMER_GROUP,
-            message_id
-        )
+        await redis_client.xack(LOG_STREAM, LOG_CONSUMER_GROUP, message_id)
 
 
 async def main():

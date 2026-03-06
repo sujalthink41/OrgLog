@@ -2,9 +2,9 @@ import json
 
 import redis.asyncio as redis
 
-from app.interfaces.event_publisher import EventPublisher
-from app.domain.log_entry import LogEntry
 from app.core.constants import LOG_STREAM
+from app.domain.log_entry import LogEntry
+from app.interfaces.event_publisher import EventPublisher
 
 
 class RedisPublisher(EventPublisher):
@@ -14,7 +14,4 @@ class RedisPublisher(EventPublisher):
 
     async def publish(self, log: LogEntry):
         payload = json.dumps(log.to_dict(), default=str)
-        await self.redis_client.xadd(
-            LOG_STREAM,
-            {"data": payload}
-        )
+        await self.redis_client.xadd(LOG_STREAM, {"data": payload})
