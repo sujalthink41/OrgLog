@@ -1,7 +1,7 @@
 """create logs table
 
 Revision ID: 420ad59cdc64
-Revises: 
+Revises:
 Create Date: 2026-03-07 00:19:44.319631
 """
 
@@ -27,7 +27,19 @@ def upgrade() -> None:
         sa.Column("level", sa.String(length=50), nullable=False),
         sa.Column("message", sa.Text(), nullable=False),
         sa.Column("metadata", postgresql.JSONB, nullable=True),
-        sa.Column("timestamp", sa.DateTime(), nullable=False),
+        sa.Column("timestamp", sa.DateTime(timezone=True), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
     )
 
 

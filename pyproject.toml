@@ -6,7 +6,7 @@ authors = [
     {name = "Sujal"}
 ]
 readme = "README.md"
-requires-python = "^3.11"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi (>=0.135.1,<0.136.0)",
     "uvicorn (>=0.41.0,<0.42.0)",
@@ -25,6 +25,9 @@ package-mode = false
 black = ">=24.1.1"
 isort = ">=5.13.2"
 pre-commit = ">=3.0.0"
+
+[tool.isort]
+profile = "black"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

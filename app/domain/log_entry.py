@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from uuid import UUID
 
@@ -25,7 +25,19 @@ class LogEntry:
             level=request.level,
             message=request.message,
             metadata=request.metadata,
-            timestamp=request.timestamp or datetime.utcnow(),
+            timestamp=request.timestamp or datetime.now(timezone.utc),
+        )
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "LogEntry":
+        return cls(
+            project_id=UUID(data["project_id"]),
+            trace_id=UUID(data["trace_id"]),
+            service=data["service"],
+            level=LogLevel(data["level"]),
+            message=data["message"],
+            metadata=data.get("metadata"),
+            timestamp=datetime.fromisoformat(data["timestamp"]),
         )
 
     def to_dict(self):
