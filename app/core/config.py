@@ -6,17 +6,14 @@ class Settings(BaseSettings):
 
     # redis config
     REDIS_HOST: str = Field(...)
-    REDIS_PORT: int = Field()
+    REDIS_PORT: int = Field(...)
 
-    # postgres config
-    POSTGRES_HOST: str = Field(...)
-    POSTGRES_PORT: int = Field(...)
-    POSTGRES_USER: str = Field(...)
-    POSTGRES_PASSWORD: str = Field(...)
-    POSTGRES_DB: str = Field(...)
+    # database url
+    DATABASE_URL: str = Field(...)
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()

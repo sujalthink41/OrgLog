@@ -7,6 +7,83 @@ It is built with a distributed, event-driven architecture and is designed to evo
 
 ---
 
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- Poetry
+- PostgreSQL running on port 5432
+- Redis running on port 6379
+
+### Setup
+
+```bash
+# install dependencies
+python3 -m poetry install
+
+# copy env and configure
+cp .env.example .env
+
+# run database migrations
+python3 -m poetry run alembic upgrade head
+```
+
+### Running
+
+You need **two terminals**:
+
+**Terminal 1 — API Server**
+```bash
+python3 -m poetry run uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 — Log Worker**
+```bash
+python3 -m poetry run python -m app.workers.log_worker
+```
+
+### Test It
+
+Open Swagger UI at `http://localhost:8000/docs` and send a log, or use curl:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/logs \
+  -H "Content-Type: application/json" \
+  -d '{"project_id":"550e8400-e29b-41d4-a716-446655440000","trace_id":"660e8400-e29b-41d4-a716-446655440000","service":"payment-service","level":"ERROR","message":"Payment failed","metadata":{"user_id":"u1","amount":120}}'
+```
+
+Verify in PostgreSQL: `SELECT * FROM logs;`
+
+### Environment Variables
+
+| Variable | Description | Example |
+|---|---|---|
+| `REDIS_HOST` | Redis hostname | `localhost` |
+| `REDIS_PORT` | Redis port | `6379` |
+| `DATABASE_URL` | Async PostgreSQL URL | `postgresql+asyncpg://postgres:postgres@localhost:5432/orglog` |
+
+### Project Structure
+
+```
+app/
+  api/v1/          # API routes
+  core/            # Config, Redis client, dependencies
+  data/
+    database/      # SQLAlchemy base, session, mixins
+    models/        # ORM models
+  domain/          # Domain entities and enums
+  infrastructure/  # Redis publisher, Postgres repository
+  interfaces/      # Abstract base classes (ports)
+  schemas/         # Pydantic request/response models
+  services/        # Business logic
+  workers/         # Redis stream consumers
+  utils/           # Helpers
+migrations/        # Alembic migrations
+```
+
+---
+
 ## 🧠 Why OrgLog?
 
 Most teams either:

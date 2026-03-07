@@ -1,38 +1,26 @@
-import json
+from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
-import asyncpg
-
+from app.data.models.log_model import Log
 from app.domain.log_entry import LogEntry
 from app.interfaces.log_repository import LogRepository
 
 
 class PostgresLogRepository(LogRepository):
 
-    def __init__(self, pool: asyncpg.Pool):
-        self.pool = pool
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-    async def save(self, log: LogEntry):
-
-        query = """
-        INSERT INTO logs (
-            project_id,
-            trace_id,
-            service,
-            level,
-            message,
-            metadata,
-            timestamp
+    async def save(self, log_entry: LogEntry):
+        stmt = insert(Log).values(
+            project_id=log_entry.project_id,
+            trace_id=log_entry.trace_id,
+            service=log_entry.service,
+            level=log_entry.level.value,
+            message=log_entry.message,
+            log_metadata=log_entry.metadata,
+            timestamp=log_entry.timestamp,
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        """
-        async with self.pool.acquire() as connection:
-            await connection.execute(
-                query,
-                str(log.project_id),
-                str(log.trace_id),
-                log.service,
-                log.level,
-                log.message,
-                json.dumps(log.metadata) if log.metadata else None,
-                log.timestamp,
-            )
+
+        await self.db.execute(stmt)
+        await self.db.commit()

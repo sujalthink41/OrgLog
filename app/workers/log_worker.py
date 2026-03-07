@@ -1,9 +1,17 @@
 import asyncio
 import json
+import logging
+
+from redis.exceptions import ResponseError
 
 from app.core.constants import LOG_CONSUMER_GROUP, LOG_STREAM
 from app.core.redis import redis_client
+from app.data.database.session import AsyncSessionLocal
+from app.domain.log_entry import LogEntry
+from app.infrastructure.postgres_log_repository import PostgresLogRepository
 from app.utils.workername import generate_worker_name
+
+logger = logging.getLogger(__name__)
 
 
 class LogWorker:
@@ -12,8 +20,8 @@ class LogWorker:
         self.consumer_name = generate_worker_name()
 
     async def start(self):
-
         await self.create_consumer_group()
+        logger.info(f"Worker {self.consumer_name} started")
 
         while True:
             messages = await redis_client.xreadgroup(
@@ -29,7 +37,6 @@ class LogWorker:
 
             for stream, events in messages:
                 for message_id, data in events:
-
                     await self.process_event(message_id, data)
 
     async def create_consumer_group(self):
@@ -37,19 +44,30 @@ class LogWorker:
             await redis_client.xgroup_create(
                 name=LOG_STREAM, groupname=LOG_CONSUMER_GROUP, id="0", mkstream=True
             )
-        except Exception:
-            pass
+        except ResponseError as e:
+            if "BUSYGROUP" not in str(e):
+                raise
 
     async def process_event(self, message_id, data):
+        try:
+            log_data = json.loads(data["data"])
+            log_entry = LogEntry.from_dict(log_data)
 
-        log_data = json.loads(data["data"])
+            async with AsyncSessionLocal() as session:
+                repo = PostgresLogRepository(session)
+                await repo.save(log_entry)
 
-        print("Processing log:", log_data)
-
-        await redis_client.xack(LOG_STREAM, LOG_CONSUMER_GROUP, message_id)
+            await redis_client.xack(LOG_STREAM, LOG_CONSUMER_GROUP, message_id)
+            logger.info(f"Processed log: {message_id}")
+        except Exception:
+            logger.exception(f"Failed to process message: {message_id}")
 
 
 async def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
     worker = LogWorker()
     await worker.start()
 
