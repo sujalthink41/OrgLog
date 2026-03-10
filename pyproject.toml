@@ -15,7 +15,8 @@ dependencies = [
     "asyncpg (>=0.28.0)",
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "sqlalchemy (>=2.0.48,<3.0.0)",
-    "alembic (>=1.18.4,<2.0.0)"
+    "alembic (>=1.18.4,<2.0.0)",
+    "websockets (>=15.0,<16.0)"
 ]
 
 [tool.poetry]
