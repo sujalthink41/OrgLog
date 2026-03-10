@@ -35,15 +35,6 @@ async def create_log(
     return {"status": "success", "message": "queued for ingestion"}
 
 
-@router.post("/logs")
-async def create_log(
-    request: LogCreateRequest,
-    service: LogIngestionService = Depends(get_log_ingestion_service),
-):
-    await service.ingest_log(request)
-    return {"status": "success", "message": "queued for ingestion"}
-
-
 @router.get("/logs", response_model=LogListResponse)
 async def search_logs(
     project_id: UUID = Query(..., description="Project ID"),

@@ -1,395 +1,263 @@
-# 🚀 OrgLog
+# OrgLog
 
-> A production-grade, multi-tenant, event-driven logging platform for internal organizations.
+**A production-grade, multi-tenant, event-driven centralized logging platform.**
 
-OrgLog is a high-performance logging infrastructure designed to ingest, process, stream, and analyze logs at scale.
-It is built with a distributed, event-driven architecture and is designed to evolve from a single-node setup to a horizontally scalable production system.
+OrgLog is a high-performance logging infrastructure designed to ingest, process, stream, and analyze logs at scale. Built with an async, event-driven architecture — from a single-node Docker Compose setup to a horizontally scalable production system.
+
+> Logs are not just strings. Logs are events. Events build observability. Observability builds reliability.
 
 ---
 
-## 🚀 Quick Start
+## Screenshots
+
+### Dashboard — Platform Overview
+Stat cards, log level distribution, error trends, service breakdown, and recent logs at a glance.
+
+![Dashboard](docs/screenshots/OrgLog1.png)
+
+### Log Explorer — Search & Inspect
+Full-text search, level/service/time-range filters, expandable rows with metadata, trace IDs, and JSON copy.
+
+![Log Explorer](docs/screenshots/OrgLog2.png)
+
+### Live Tail — Real-Time Streaming
+WebSocket-powered terminal with per-level coloring, inline metadata expansion, pause/resume, and level filtering.
+
+![Live Tail](docs/screenshots/OrgLog3.png)
+
+### Analytics — Metrics & Insights
+Error rate tracking, log level distribution, per-service volume, and error trend over time.
+
+![Analytics](docs/screenshots/OrgLog4.png)
+
+---
+
+## Architecture
+
+```
+Client Apps / SDKs
+        |
+        v
+   FastAPI Ingestion Service  (POST /api/v1/logs)
+        |
+        v
+   Redis Streams  (Event Queue — Consumer Groups)
+        |
+        v
+   Log Processor Worker
+        |
+        +---------------------------+
+        |                           |
+        v                           v
+   PostgreSQL (Log Storage)   Redis Pub/Sub (Broadcast)
+                                    |
+                                    v
+                              WebSocket Service  (/ws/{project_id})
+                                    |
+                                    v
+                              Next.js Dashboard  (Real-time UI)
+```
+
+### Design Principles
+
+- Asynchronous, non-blocking ingestion
+- Event-driven processing via Redis Streams
+- At-least-once delivery with consumer groups
+- Multi-tenant isolation per `project_id`
+- Stateless services for horizontal scaling
+- Clean architecture with repository pattern and dependency injection
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend API** | FastAPI, Uvicorn, Python 3.12 |
+| **Event Queue** | Redis Streams 7 (Kafka-ready design) |
+| **Log Storage** | PostgreSQL 16 |
+| **Real-Time** | WebSockets + Redis Pub/Sub |
+| **ORM** | SQLAlchemy 2.0 (async) + Alembic |
+| **Frontend** | Next.js 16, TypeScript, Tailwind CSS |
+| **Charts** | Recharts |
+| **State** | TanStack React Query |
+| **Deployment** | Docker Compose |
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.11+
-- Poetry
-- PostgreSQL running on port 5432
-- Redis running on port 6379
+- Docker & Docker Compose
 
-### Setup
+### Run Everything
 
 ```bash
-# install dependencies
-python3 -m poetry install
+# Start backend (Postgres, Redis, API, Worker)
+docker compose up -d
 
-# copy env and configure
-cp .env.example .env
+# Run database migrations
+docker compose exec api alembic upgrade head
 
-# run database migrations
-python3 -m poetry run alembic upgrade head
+# Start frontend
+cd frontend
+npm install
+npm run dev
 ```
 
-### Running
+- **API**: http://localhost:8000
+- **Swagger UI**: http://localhost:8000/docs
+- **Dashboard**: http://localhost:3000
 
-You need **two terminals**:
-
-**Terminal 1 — API Server**
-```bash
-python3 -m poetry run uvicorn app.main:app --reload --port 8000
-```
-
-**Terminal 2 — Log Worker**
-```bash
-python3 -m poetry run python -m app.workers.log_worker
-```
-
-### Test It
-
-Open Swagger UI at `http://localhost:8000/docs` and send a log, or use curl:
+### Send a Test Log
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/logs \
   -H "Content-Type: application/json" \
-  -d '{"project_id":"550e8400-e29b-41d4-a716-446655440000","trace_id":"660e8400-e29b-41d4-a716-446655440000","service":"payment-service","level":"ERROR","message":"Payment failed","metadata":{"user_id":"u1","amount":120}}'
+  -d '{
+    "project_id": "550e8400-e29b-41d4-a716-446655440000",
+    "trace_id": "660e8400-e29b-41d4-a716-446655440000",
+    "service": "payment-service",
+    "level": "ERROR",
+    "message": "Payment gateway timeout after 30s",
+    "metadata": {"order_id": "ORD-456", "amount": 299.99}
+  }'
 ```
 
-Verify in PostgreSQL: `SELECT * FROM logs;`
+### Local Development (without Docker)
 
-### Environment Variables
+```bash
+# Backend
+python3 -m poetry install
+cp .env.example .env
+python3 -m poetry run alembic upgrade head
 
-| Variable | Description | Example |
+# Terminal 1 — API
+python3 -m poetry run uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — Worker
+python3 -m poetry run python -m app.workers.log_worker
+
+# Terminal 3 — Frontend
+cd frontend && npm install && npm run dev
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/health` | Health check |
+| `POST` | `/api/v1/logs` | Ingest a log (non-blocking, queued via Redis Streams) |
+| `GET` | `/api/v1/logs` | Search logs with filters and pagination |
+| `GET` | `/api/v1/logs/analytics` | Aggregated analytics per project |
+| `WS` | `/api/v1/ws/{project_id}` | Real-time log stream via WebSocket |
+
+### Search Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `project_id` | UUID (required) | Filter by project |
+| `service` | string | Filter by service name |
+| `level` | enum | DEBUG, INFO, WARNING, ERROR, CRITICAL |
+| `start_time` | ISO datetime | From timestamp |
+| `end_time` | ISO datetime | To timestamp |
+| `search_text` | string | Full-text search in message |
+| `limit` | int (1-100) | Page size (default: 50) |
+| `offset` | int | Pagination offset |
+
+---
+
+## Project Structure
+
+```
+OrgLog/
+├── app/                          # Backend (Python/FastAPI)
+│   ├── api/v1/                   # REST + WebSocket routes
+│   ├── core/                     # Config, Redis client, DI
+│   ├── data/
+│   │   ├── database/             # SQLAlchemy base, session, mixins
+│   │   └── models/               # ORM models
+│   ├── domain/                   # Domain entities & enums
+│   ├── infrastructure/           # Redis publisher, Postgres repository, Pub/Sub
+│   ├── interfaces/               # Abstract base classes (ports)
+│   ├── schemas/                  # Pydantic request/response models
+│   ├── services/                 # Business logic layer
+│   ├── workers/                  # Redis stream consumer workers
+│   └── utils/                    # Helpers
+├── migrations/                   # Alembic database migrations
+├── frontend/                     # Frontend (Next.js/TypeScript)
+│   └── src/
+│       ├── app/                  # Pages (Dashboard, Logs, Live Tail, Analytics)
+│       ├── components/
+│       │   ├── ui/               # Reusable primitives (Button, Card, Badge, etc.)
+│       │   ├── layout/           # Sidebar, Header
+│       │   ├── dashboard/        # Stat cards, charts
+│       │   └── logs/             # Log table, filters, live stream
+│       └── lib/
+│           ├── api/              # API client layer
+│           ├── constants/        # Design tokens & app config
+│           ├── hooks/            # Custom React hooks
+│           ├── providers/        # Global state (Query, Project, WebSocket, Sidebar)
+│           ├── types/            # TypeScript types
+│           └── utils/            # Formatters & helpers
+├── docs/                         # Scope documents & screenshots
+├── docker-compose.yml            # Full stack orchestration
+└── Dockerfile                    # Backend container image
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default |
 |---|---|---|
 | `REDIS_HOST` | Redis hostname | `localhost` |
 | `REDIS_PORT` | Redis port | `6379` |
 | `DATABASE_URL` | Async PostgreSQL URL | `postgresql+asyncpg://postgres:postgres@localhost:5432/orglog` |
-
-### Project Structure
-
-```
-app/
-  api/v1/          # API routes
-  core/            # Config, Redis client, dependencies
-  data/
-    database/      # SQLAlchemy base, session, mixins
-    models/        # ORM models
-  domain/          # Domain entities and enums
-  infrastructure/  # Redis publisher, Postgres repository
-  interfaces/      # Abstract base classes (ports)
-  schemas/         # Pydantic request/response models
-  services/        # Business logic
-  workers/         # Redis stream consumers
-  utils/           # Helpers
-migrations/        # Alembic migrations
-```
+| `NEXT_PUBLIC_API_URL` | Backend API URL (frontend) | `http://localhost:8000` |
+| `NEXT_PUBLIC_WS_URL` | WebSocket URL (frontend) | `ws://localhost:8000` |
 
 ---
 
-## 🧠 Why OrgLog?
+## Why OrgLog?
 
-Most teams either:
+Most teams either print logs to stdout, dump them into a general-purpose database, or pay for expensive SaaS tools. OrgLog gives you:
 
-* Print logs to stdout
-* Store logs in PostgreSQL
-* Or rely on expensive third-party SaaS tools
+- **Full control** over your logging infrastructure
+- **Real-time streaming** via WebSocket
+- **Fast search** with filters and pagination
+- **Event-driven architecture** ready for Kafka migration
+- **Multi-tenant isolation** per project
+- **Production scalability** — stateless services, consumer groups, horizontal scaling
 
-OrgLog gives you:
-
-* 🔥 Full control over your logging infrastructure
-* ⚡ Real-time log streaming
-* 📊 Fast analytical queries
-* 🧵 Event-driven architecture
-* 🏢 Multi-tenant support
-* 🚀 Production scalability
-
-Think of it as a mini internal version of Datadog / ELK / Logtail — purpose-built for your organization.
+Think of it as a purpose-built internal alternative to Datadog / ELK / Logtail.
 
 ---
 
-# 🏗 Architecture Overview
+## Roadmap
 
-```
-Client Apps (SDKs)
-        |
-        v
-   API Gateway
-        |
-        v
-   FastAPI Ingestion Service
-        |
-        v
-   Redis Streams (Event Queue)
-        |
-        v
-   Log Processor Workers
-        |
-        +----------------------+
-        |                      |
-        v                      v
-   ClickHouse (Logs)     PostgreSQL (Metadata)
-        |
-        v
-   WebSocket Service
-        |
-        v
-   Real-time Dashboard
-```
-
-### Key Design Principles
-
-* Asynchronous ingestion
-* Event-driven processing
-* Horizontal scalability
-* Backpressure handling
-* Multi-tenant isolation
-* Observability-first design
+- [x] Log Ingestion API (non-blocking, Redis Streams)
+- [x] Event-driven worker processing
+- [x] PostgreSQL log storage
+- [x] Search API with filters & pagination
+- [x] Real-time WebSocket streaming
+- [x] Basic error analytics
+- [x] Docker Compose deployment
+- [x] Frontend dashboard (Next.js)
+- [ ] API key authentication & management
+- [ ] Redis-based rate limiting
+- [ ] Prometheus metrics & observability
+- [ ] Database indexes & query optimization
+- [ ] Kafka migration
+- [ ] Cold storage (S3)
+- [ ] Role-based access control
+- [ ] Distributed tracing
 
 ---
 
-# ⚙️ Tech Stack
+## License
 
-| Layer          | Technology                         |
-| -------------- | ---------------------------------- |
-| API            | FastAPI                            |
-| Event Queue    | Redis Streams (Kafka-ready design) |
-| Log Storage    | ClickHouse                         |
-| Metadata DB    | PostgreSQL                         |
-| Cache          | Redis                              |
-| Live Streaming | WebSockets                         |
-| Monitoring     | Prometheus + Grafana               |
-| Deployment     | Docker → Kubernetes                |
-
----
-
-# 🧱 Core Components
-
-## 1️⃣ Ingestion Service
-
-* Accepts logs via REST API
-* Authenticates using API keys
-* Applies rate limiting
-* Pushes logs to Redis Streams
-* Returns immediately (non-blocking)
-
-### Example API
-
-`POST /v1/logs`
-
-```json
-{
-  "service": "payment-service",
-  "level": "ERROR",
-  "message": "Payment failed",
-  "trace_id": "abc-123",
-  "metadata": {
-    "user_id": "u1",
-    "amount": 120
-  }
-}
-```
-
----
-
-## 2️⃣ Worker Service
-
-* Consumes logs from Redis Streams
-* Writes to ClickHouse
-* Publishes to live channels
-* Detects error spikes
-* Triggers alerts
-
----
-
-## 3️⃣ Storage Layer
-
-### ClickHouse (Hot Logs)
-
-Optimized for:
-
-* High write throughput
-* Fast aggregations
-* Time-series analytics
-* Billions of rows
-
-### PostgreSQL (Metadata)
-
-Stores:
-
-* Organizations
-* Projects
-* API keys
-* Plans
-* Rate limits
-* User roles
-
----
-
-## 4️⃣ WebSocket Service
-
-Provides:
-
-* Real-time log streaming
-* Live tailing per project
-* Error monitoring dashboard
-
-Example:
-
-```
-INFO    auth-service    User logged in
-ERROR   payment-service Payment failed
-WARN    api-service     High latency
-```
-
----
-
-# 🔐 Multi-Tenant Model
-
-OrgLog is designed as a SaaS-style system.
-
-### Entities
-
-* Organization
-* Project
-* API Key
-* Log Entry
-
-Every log is scoped to a `project_id`.
-
-Isolation is enforced at:
-
-* API layer
-* Worker layer
-* Query layer
-* WebSocket layer
-
----
-
-# 📈 Production Features
-
-* API key hashing
-* Rate limiting (Redis-based)
-* Log size validation
-* JSON schema validation
-* Error spike detection
-* Log retention policies
-* Horizontal scaling
-* Consumer groups
-* Replay capability
-* Backpressure tolerance
-
----
-
-# 📊 Observability
-
-OrgLog monitors itself.
-
-Metrics exposed for:
-
-* Logs per second
-* Worker lag
-* Queue depth
-* Error rate
-* API latency
-* Memory usage
-
-Integrated with:
-
-* Prometheus
-* Grafana
-
----
-
-# 🚀 Deployment Modes
-
-## Development
-
-* Docker Compose
-* Single-node Redis
-* Single-node ClickHouse
-* Single worker
-
-## Production
-
-* Kubernetes
-* Redis cluster
-* ClickHouse cluster
-* Horizontal pod autoscaling
-* Isolated worker pools
-
----
-
-# 🛠 Roadmap
-
-### Phase 1 — Core Logging
-
-* Ingestion API
-* Redis Streams
-* Worker
-* ClickHouse integration
-
-### Phase 2 — Live Streaming
-
-* WebSocket service
-* Project-based streaming
-
-### Phase 3 — Analytics
-
-* Error aggregation
-* Service-level metrics
-* Dashboard UI
-
-### Phase 4 — Advanced Infra
-
-* Kafka migration
-* Cold storage (S3)
-* Log retention policies
-* RBAC
-* Distributed tracing
-
----
-
-# 🧨 Future "Crazy" Features
-
-* Distributed trace reconstruction
-* Structured log enforcement
-* Query engine for log analytics
-* Log sampling strategies
-* Adaptive rate limiting
-* Real-time anomaly detection
-* Replay logs from stream
-* Cross-service correlation
-
----
-
-# 🎯 Goals of This Project
-
-This is not a CRUD app.
-
-This project is designed to teach and implement:
-
-* Event-driven systems
-* Real-world backpressure handling
-* Queue semantics
-* Horizontal scaling
-* Production-grade API design
-* Multi-tenant SaaS architecture
-* Infrastructure engineering
-
----
-
-# 📜 License
-
-Internal organization project.
-Not intended for public distribution (yet 😉).
-
----
-
-# 🧠 Philosophy
-
-> Logs are not just strings.
-> Logs are events.
-> Events build observability.
-> Observability builds reliability.
-
----
-
-**OrgLog — Build your own logging infrastructure.**
+Internal organization project. Not intended for public distribution.
