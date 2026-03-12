@@ -6,6 +6,9 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import settings
 from app.data.database.base import Base
 from app.data.models.log_model import Log  # noqa: F401
+from app.data.models.organization_model import Organization  # noqa: F401
+from app.data.models.project_model import Project  # noqa: F401
+from app.data.models.user_model import User  # noqa: F401
 
 config = context.config
 
