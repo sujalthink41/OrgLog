@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.logs import router as log_router
+from app.api.v1.projects import router as project_router
 from app.api.v1.ws import router as ws_router
 
 app = FastAPI(title="OrgLog API", version="1.0.0")
@@ -16,5 +17,6 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(project_router)
 app.include_router(log_router)
 app.include_router(ws_router)
