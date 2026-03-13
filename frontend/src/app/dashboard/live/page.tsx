@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Header } from "@/components/layout";
+import { Header, NoProjectSelected } from "@/components/layout";
 import { Button, StatusDot, Badge, Card, Select } from "@/components/ui";
 import { LiveLogStream } from "@/components/logs";
-import { useLiveLogsContext } from "@/lib/providers";
+import { useLiveLogsContext, useProjectContext } from "@/lib/providers";
 import {
   Pause,
   Play,
@@ -37,6 +37,21 @@ const levelIconMap: Record<string, { icon: typeof Info; color: string }> = {
 };
 
 export default function LiveTailPage() {
+  const { currentProject } = useProjectContext();
+
+  if (!currentProject) {
+    return (
+      <>
+        <Header title="Live Tail" description="Real-time log stream via WebSocket" />
+        <NoProjectSelected />
+      </>
+    );
+  }
+
+  return <LiveTailContent />;
+}
+
+function LiveTailContent() {
   const {
     messages,
     isConnected,

@@ -1,4 +1,4 @@
-import { API_CONFIG } from "@/lib/constants";
+import { API_CONFIG, AUTH_TOKEN_KEY } from "@/lib/constants";
 
 type RequestOptions = {
   method?: string;
@@ -6,6 +6,7 @@ type RequestOptions = {
   params?: Record<string, string | number | undefined>;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  skipAuth?: boolean;
 };
 
 class ApiError extends Error {
@@ -17,6 +18,11 @@ class ApiError extends Error {
     super(`API Error ${status}: ${statusText}`);
     this.name = "ApiError";
   }
+}
+
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
 function buildUrl(path: string, params?: Record<string, string | number | undefined>): string {
@@ -32,19 +38,25 @@ function buildUrl(path: string, params?: Record<string, string | number | undefi
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, params, headers = {}, signal } = options;
+  const { method = "GET", body, params, headers = {}, signal, skipAuth = false } = options;
 
   const url = buildUrl(path, params);
+  const token = getToken();
+
+  const requestHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
+
+  if (!skipAuth && token) {
+    requestHeaders["Authorization"] = `Bearer ${token}`;
+  }
 
   const config: RequestInit = {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      // Auth header will be added here once auth is implemented
-      // "Authorization": `Bearer ${getAuthToken()}`,
-      ...headers,
-    },
+    headers: requestHeaders,
     signal,
+    credentials: "include",
   };
 
   if (body) {
@@ -65,8 +77,8 @@ export const apiClient = {
   get: <T>(path: string, params?: Record<string, string | number | undefined>, signal?: AbortSignal) =>
     request<T>(path, { params, signal }),
 
-  post: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: "POST", body }),
+  post: <T>(path: string, body: unknown, skipAuth?: boolean) =>
+    request<T>(path, { method: "POST", body, skipAuth }),
 };
 
 export { ApiError };

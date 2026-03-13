@@ -16,6 +16,14 @@ export const API_CONFIG = {
     logs: "/api/v1/logs",
     analytics: "/api/v1/logs/analytics",
     websocket: "/api/v1/ws",
+    // auth endpoints
+    register: "/api/v1/auth/register",
+    login: "/api/v1/auth/login",
+    refresh: "/api/v1/auth/refresh",
+    logout: "/api/v1/auth/logout",
+    me: "/api/v1/auth/me",
+    // project endpoints
+    projects: "/api/v1/projects",
   },
   defaults: {
     pageSize: 50,
@@ -53,5 +61,4 @@ export const NAVIGATION = {
   ],
 } as const;
 
-// Placeholder project ID for demo/development (before auth is implemented)
-export const DEFAULT_PROJECT_ID = "550e8400-e29b-41d4-a716-446655440000";
+export const AUTH_TOKEN_KEY = "orglog_access_token";

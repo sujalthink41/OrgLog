@@ -1,6 +1,6 @@
 "use client";
 
-import { Header } from "@/components/layout";
+import { Header, NoProjectSelected } from "@/components/layout";
 import { Skeleton } from "@/components/ui";
 import {
   StatCard,
@@ -19,7 +19,21 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
-  const { projectId } = useProjectContext();
+  const { projectId, currentProject } = useProjectContext();
+
+  if (!currentProject) {
+    return (
+      <>
+        <Header title="Dashboard" description="Platform overview and key metrics" />
+        <NoProjectSelected />
+      </>
+    );
+  }
+
+  return <DashboardContent projectId={projectId} />;
+}
+
+function DashboardContent({ projectId }: { projectId: string }) {
   const { data: analytics, isLoading: analyticsLoading } = useAnalytics(projectId);
   const { data: recentLogs, isLoading: logsLoading } = useLogs({
     project_id: projectId,

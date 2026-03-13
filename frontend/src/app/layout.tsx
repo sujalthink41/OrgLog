@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import {
-  QueryProvider,
-  ProjectProvider,
-  LiveLogsProvider,
-  SidebarProvider,
-} from "@/lib/providers";
+import { QueryProvider } from "@/lib/providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -34,13 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="antialiased bg-slate-50 text-slate-900">
-        <QueryProvider>
-          <ProjectProvider>
-            <SidebarProvider>
-              <LiveLogsProvider>{children}</LiveLogsProvider>
-            </SidebarProvider>
-          </ProjectProvider>
-        </QueryProvider>
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
