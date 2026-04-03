@@ -15,7 +15,12 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-db_url = settings.DATABASE_URL.replace("+asyncpg", "+psycopg2")
+# Handle both postgresql+asyncpg:// and plain postgresql:// URLs
+db_url = settings.DATABASE_URL
+if "+asyncpg" in db_url:
+    db_url = db_url.replace("+asyncpg", "+psycopg2")
+elif db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = Base.metadata

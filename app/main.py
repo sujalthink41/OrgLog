@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import subprocess
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -16,8 +17,26 @@ from app.workers.log_worker import LogWorker
 logger = logging.getLogger(__name__)
 
 
+def run_migrations():
+    """Run alembic migrations on startup."""
+    try:
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            logger.info("Database migrations completed successfully")
+        else:
+            logger.error(f"Migration failed: {result.stderr}")
+    except Exception:
+        logger.exception("Failed to run migrations")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Run database migrations automatically
+    run_migrations()
     # Start the log worker as a background task inside the API process
     worker = LogWorker()
     worker_task = asyncio.create_task(worker.start())
