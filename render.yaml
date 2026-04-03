@@ -1,0 +1,64 @@
+databases:
+  - name: orglog-db
+    plan: free
+    databaseName: orglog
+    user: orglog_user
+
+services:
+  # Redis
+  - type: redis
+    name: orglog-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  # FastAPI server
+  - type: web
+    name: orglog-api
+    plan: free
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orglog-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: orglog-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: orglog-redis
+          type: redis
+          property: port
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        value: https://orglog.netlify.app,http://localhost:3001
+
+  # Log worker
+  - type: worker
+    name: orglog-worker
+    plan: free
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m app.workers.log_worker
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orglog-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: orglog-redis
+          type: redis
+          property: port
+      - key: REDIS_PORT
+        fromService:
+          name: orglog-redis
+          type: redis
+          property: port
+      - key: JWT_SECRET
+        generateValue: true

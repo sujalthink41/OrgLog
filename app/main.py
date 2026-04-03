@@ -6,12 +6,13 @@ from app.api.v1.ingest import router as ingest_router
 from app.api.v1.logs import router as log_router
 from app.api.v1.projects import router as project_router
 from app.api.v1.ws import router as ws_router
+from app.core.config import settings
 
 app = FastAPI(title="OrgLog API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],
+    allow_origins=[o.strip() for o in settings.ALLOWED_ORIGINS.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

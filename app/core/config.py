@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
 
+    # cors config
+    ALLOWED_ORIGINS: str = Field(default="http://localhost:3001")
+
     # org config
     ORG_NAME: str = Field(default="Think41")
     ORG_DOMAIN: str = Field(default="think41.com")
