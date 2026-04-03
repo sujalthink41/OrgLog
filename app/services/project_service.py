@@ -32,6 +32,10 @@ class ProjectService:
             )
         return project
 
+    async def get_project_by_id(self, project_id: UUID) -> Project | None:
+        """Get a project by ID without org validation (for ingestion endpoints)."""
+        return await self.project_repo.find_by_id(project_id)
+
     async def validate_project_access(
         self, project_id: UUID, organization_id: UUID
     ) -> Project:

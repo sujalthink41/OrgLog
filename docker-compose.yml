@@ -15,13 +15,13 @@ services:
   redis: 
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     
   # FastAPI server 
   api:
     build: .
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
