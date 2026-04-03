@@ -9,13 +9,21 @@ export const APP_CONFIG = {
 } as const;
 
 export const API_CONFIG = {
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
-  wsUrl: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000",
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+  wsUrl: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080",
   endpoints: {
     health: "/api/v1/health",
     logs: "/api/v1/logs",
     analytics: "/api/v1/logs/analytics",
     websocket: "/api/v1/ws",
+    // auth endpoints
+    register: "/api/v1/auth/register",
+    login: "/api/v1/auth/login",
+    refresh: "/api/v1/auth/refresh",
+    logout: "/api/v1/auth/logout",
+    me: "/api/v1/auth/me",
+    // project endpoints
+    projects: "/api/v1/projects",
   },
   defaults: {
     pageSize: 50,
@@ -53,5 +61,4 @@ export const NAVIGATION = {
   ],
 } as const;
 
-// Placeholder project ID for demo/development (before auth is implemented)
-export const DEFAULT_PROJECT_ID = "550e8400-e29b-41d4-a716-446655440000";
+export const AUTH_TOKEN_KEY = "orglog_access_token";

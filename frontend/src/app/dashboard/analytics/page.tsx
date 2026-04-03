@@ -1,6 +1,6 @@
 "use client";
 
-import { Header } from "@/components/layout";
+import { Header, NoProjectSelected } from "@/components/layout";
 import { Skeleton } from "@/components/ui";
 import {
   StatCard,
@@ -20,7 +20,16 @@ import {
 } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const { projectId } = useProjectContext();
+  const { projectId, currentProject } = useProjectContext();
+
+  if (!currentProject) {
+    return (
+      <>
+        <Header title="Analytics" description="Detailed metrics and insights" />
+        <NoProjectSelected />
+      </>
+    );
+  }
   const { data: analytics, isLoading } = useAnalytics(projectId);
 
   const totalErrors =

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Header } from "@/components/layout";
+import { Header, NoProjectSelected } from "@/components/layout";
 import { EmptyState } from "@/components/ui";
 import { LogFilters, LogTable, LogPagination } from "@/components/logs";
 import { useLogs } from "@/lib/hooks";
@@ -11,7 +11,16 @@ import type { LogLevel } from "@/lib/types";
 import { SearchX } from "lucide-react";
 
 export default function LogExplorerPage() {
-  const { projectId } = useProjectContext();
+  const { projectId, currentProject } = useProjectContext();
+
+  if (!currentProject) {
+    return (
+      <>
+        <Header title="Log Explorer" description="Search, filter, and inspect log entries" />
+        <NoProjectSelected />
+      </>
+    );
+  }
 
   // Filter state
   const [searchText, setSearchText] = useState("");

@@ -10,12 +10,14 @@ from app.infrastructure.postgres_log_repository import PostgresLogRepository
 from app.infrastructure.postgres_organization_repository import (
     PostgresOrganizationRepository,
 )
+from app.infrastructure.postgres_project_repository import PostgresProjectRepository
 from app.infrastructure.postgres_user_repository import PostgresUserRepository
 from app.infrastructure.redis_publisher import RedisPublisher
 from app.services.auth_service import AuthService
 from app.services.log_analytics_service import LogAnalyticsService
 from app.services.log_ingestion_service import LogIngestionService
 from app.services.log_query_service import LogQueryService
+from app.services.project_service import ProjectService
 
 # bearer token extractor for protected routes
 bearer_scheme = HTTPBearer()
@@ -75,3 +77,13 @@ async def get_current_user(
         )
 
     return await auth_service.get_user_by_id(payload["sub"])
+
+
+# --- Project dependencies ---
+
+
+async def get_project_service(
+    session: AsyncSession = Depends(get_async_session),
+) -> ProjectService:
+    project_repo = PostgresProjectRepository(session)
+    return ProjectService(project_repo)

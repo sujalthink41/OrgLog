@@ -5,10 +5,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from app.core.dependencies import (
+    get_current_user,
     get_log_analytics_service,
     get_log_ingestion_service,
     get_log_query_service,
+    get_project_service,
 )
+from app.data.models.user_model import User
 from app.domain.enums.log_level import LogLevel
 from app.schemas.log_analytics import LogAnalyticsResponse
 from app.schemas.log_query import LogQuery
@@ -17,6 +20,7 @@ from app.schemas.log_response import LogListResponse
 from app.services.log_analytics_service import LogAnalyticsService
 from app.services.log_ingestion_service import LogIngestionService
 from app.services.log_query_service import LogQueryService
+from app.services.project_service import ProjectService
 
 router = APIRouter(prefix="/api/v1")
 
@@ -29,8 +33,14 @@ async def health_check():
 @router.post("/logs")
 async def create_log(
     request: LogCreateRequest,
+    current_user: User = Depends(get_current_user),
     service: LogIngestionService = Depends(get_log_ingestion_service),
+    project_service: ProjectService = Depends(get_project_service),
 ):
+    # validate that the project belongs to the user's org
+    await project_service.validate_project_access(
+        request.project_id, current_user.organization_id
+    )
     await service.ingest_log(request)
     return {"status": "success", "message": "queued for ingestion"}
 
@@ -45,8 +55,14 @@ async def search_logs(
     search_text: Optional[str] = Query(None, description="Search in message"),
     limit: int = Query(50, ge=1, le=100, description="Max results"),
     offset: int = Query(0, ge=0, description="Skip results"),
+    current_user: User = Depends(get_current_user),
     query_service: LogQueryService = Depends(get_log_query_service),
+    project_service: ProjectService = Depends(get_project_service),
 ):
+    # validate that the project belongs to the user's org
+    await project_service.validate_project_access(
+        project_id, current_user.organization_id
+    )
     query = LogQuery(
         project_id=project_id,
         service=service,
@@ -63,6 +79,12 @@ async def search_logs(
 @router.get("/logs/analytics", response_model=LogAnalyticsResponse)
 async def get_analytics(
     project_id: UUID = Query(..., description="Project ID"),
+    current_user: User = Depends(get_current_user),
     analytics_service: LogAnalyticsService = Depends(get_log_analytics_service),
+    project_service: ProjectService = Depends(get_project_service),
 ):
+    # validate that the project belongs to the user's org
+    await project_service.validate_project_access(
+        project_id, current_user.organization_id
+    )
     return await analytics_service.get_analytics(project_id)
