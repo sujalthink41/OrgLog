@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     # jwt config
     JWT_SECRET: str = Field(...)
     JWT_ALGORITHM: str = Field(default="HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
-    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=7)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=1440)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=30)
 
     # cors config
     ALLOWED_ORIGINS: str = Field(default="http://localhost:3001")
